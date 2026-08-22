@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Highway WorkD">
+<meta name="theme-color" content="#1B4965">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Highway WorkD - ระบบบริหารงานทางหลวง</title>
+
+<!-- Supabase SDK v2 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<!-- SheetJS สำหรับ Export Excel -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#16232E;
+  --paper:#EDF0EE;
+  --paper-2:#E2E7E3;
+  --card:#FCFDFC;
+  --blueprint:#1B4965;
+  --blueprint-2:#123047;
+  --blueprint-light:#5FA8D3;
+  --steel:#5C6B70;
+  --line:#CBD3CC;
+  --amber:#B9790A;
+  --amber-bg:#FBF0DC;
+  --green:#2F7A4D;
+  --green-bg:#E1F0E4;
+  --red:#B4443B;
+  --red-bg:#F8E3E1;
+  --purple:#6B3FA0;
+  --purple-bg:#EAE2F6;
+  --grey:#6B7472;
+  --grey-bg:#E6E9E6;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(22,35,46,.06), 0 4px 14px rgba(22,35,46,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(circle at 1px 1px, rgba(27,73,101,.08) 1px, transparent 0) 0 0/22px 22px,
+    var(--paper);
+  color:var(--ink);
+  font-family:'Sarabun',sans-serif;
+  min-height:100vh;
+  padding-bottom:70px;
+}
+.mono{font-family:'IBM Plex Mono',monospace;}
+h1,h2,h3,.display{font-family:'Kanit',sans-serif;}
+
+#splash{
+  position:fixed;inset:0;background:var(--blueprint);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  z-index:9999;transition:opacity .45s ease;color:#fff;gap:10px;
+}
+#splash .mark{font-size:2.4rem;letter-spacing:1px;font-family:'Kanit',sans-serif;font-weight:700;}
+#splash .sub{font-size:.85rem;letter-spacing:3px;color:#9FC6DE;text-transform:uppercase;}
+#splash .bar{width:120px;height:2px;background:rgba(255,255,255,.2);overflow:hidden;border-radius:2px;}
+#splash .bar span{display:block;width:40%;height:100%;background:var(--blueprint-light);animation:load 1.1s ease-in-out infinite;}
+@keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+
+#app{display:none;max-width:1080px;margin:0 auto;padding:18px 16px 40px;}
+
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{
+  width:44px;height:44px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  position:relative;
+}
+.brand h1{font-size:1.2rem;margin:0;font-weight:700;color:var(--blueprint-2);line-height:1.3;}
+.brand .yr{font-size:.75rem;color:var(--steel);letter-spacing:.5px;margin-top:2px;}
+.icon-btn{
+  display:inline-flex;align-items:center;gap:6px;background:var(--card);
+  border:1px solid var(--line);color:var(--blueprint-2);padding:7px 12px;
+  border-radius:8px;font-size:.78rem;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;
+  transition:all .15s;
+}
+.icon-btn:hover{border-color:var(--blueprint-light);background:#fff;}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* Nav Tabs */
+.nav-tabs{
+  display:flex;gap:6px;background:var(--card);border:1px solid var(--line);
+  padding:6px;border-radius:12px;margin-bottom:16px;overflow-x:auto;
+}
+.nav-tab{
+  flex:1;min-width:120px;text-align:center;padding:9px 12px;border-radius:8px;
+  font-size:.85rem;font-weight:600;color:var(--steel);cursor:pointer;
+  border:none;background:none;transition:all .2s;white-space:nowrap;
+  font-family:'Kanit',sans-serif;
+}
+.nav-tab.active{background:var(--blueprint);color:#fff;box-shadow:0 2px 6px rgba(27,73,101,.3);}
+
+/* stat cards */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 14px;position:relative;overflow:hidden;
+}
+.stat-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--stat-c,var(--blueprint));}
+.stat-card .num{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:600;color:var(--ink);}
+.stat-card .lbl{font-size:.72rem;color:var(--steel);margin-top:2px;}
+@media(max-width:680px){.stats{grid-template-columns:repeat(2,1fr);}}
+
+/* toolbar */
+.toolbar{
+  display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px;
+}
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap input{
+  width:100%;padding:9px 12px 9px 32px;border:1px solid var(--line);border-radius:7px;
+  font-family:'Sarabun',sans-serif;font-size:.88rem;background:var(--paper);
+}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--steel);}
+.toolbar select{
+  padding:9px 10px;border:1px solid var(--line);border-radius:7px;font-family:'Sarabun',sans-serif;
+  font-size:.85rem;background:var(--paper);color:var(--ink);
+}
+
+/* project cards */
+.project-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;position:relative;box-shadow:var(--shadow);
+}
+.project-card::before,.project-card::after{
+  content:'';position:absolute;width:11px;height:11px;top:8px;
+  border-top:2px solid var(--blueprint-light);opacity:.55;
+}
+.project-card::before{left:8px;border-left:2px solid var(--blueprint-light);}
+.project-card::after{right:8px;border-right:2px solid var(--blueprint-light);}
+.card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;}
+.card-idx{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--steel);letter-spacing:.5px;}
+.card-title{font-family:'Kanit',sans-serif;font-size:1.02rem;font-weight:600;color:var(--ink);margin:3px 0 4px;line-height:1.4;}
+.card-sub{font-size:.8rem;color:var(--steel);}
+.badge{font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.badge-pending{background:var(--grey-bg);color:var(--grey);}
+.badge-progress{background:#DDEBF3;color:var(--blueprint);}
+.badge-done{background:var(--green-bg);color:var(--green);}
+.badge-cancelled{background:var(--red-bg);color:var(--red);}
+.badge-handover{background:var(--purple-bg);color:var(--purple);}
+.badge-disbursement{background:var(--amber-bg);color:var(--amber);}
+
+.highway-tag-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+.hw-tag{
+  font-size:.72rem;padding:3px 8px;border-radius:6px;background:var(--paper);
+  border:1px solid var(--line);color:var(--blueprint-2);font-weight:600;
+}
+
+.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0;}
+@media(max-width:680px){.meta-grid{grid-template-columns:1fr 1fr;}}
+.meta-item .k{font-size:.68rem;color:var(--steel);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+.meta-item .v{font-size:.86rem;font-weight:600;color:var(--ink);font-family:'IBM Plex Mono',monospace;}
+
+.progress-row{margin:12px 0 8px;}
+.progress-row .pl{display:flex;justify-content:space-between;font-size:.72rem;color:var(--steel);margin-bottom:4px;}
+.progress-track{height:6px;background:var(--paper-2);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blueprint-light),var(--blueprint));border-radius:99px;transition:width .3s;}
+
+.card-actions{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--paper-2);flex-wrap:wrap;gap:8px;}
+.card-actions-right{display:flex;gap:6px;}
+.act-btn{
+  border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:6px 12px;
+  border-radius:7px;font-size:.78rem;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600;
+  display:inline-flex;align-items:center;gap:5px;
+}
+.act-btn:hover{background:#fff;border-color:var(--blueprint-light);}
+.act-btn.primary{background:var(--blueprint);color:#fff;border-color:var(--blueprint);}
+.act-btn.primary:hover{background:var(--blueprint-2);}
+.act-btn.del:hover{border-color:var(--red);color:var(--red);}
+
+/* Detail View */
+.detail-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);}
+.detail-header{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px;}
+.detail-header h2{font-size:1.3rem;margin:6px 0;color:var(--blueprint-2);}
+.detail-section{margin-bottom:20px;}
+.detail-section h4{margin:0 0 10px;font-size:.95rem;color:var(--blueprint);font-family:'Kanit',sans-serif;border-left:3px solid var(--blueprint);padding-left:8px;}
+.detail-info-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:14px;}
+@media(max-width:680px){.detail-info-grid{grid-template-columns:1fr;}}
+.info-box{background:var(--paper);padding:12px;border-radius:8px;border:1px solid var(--line);}
+.info-box .lbl{font-size:.72rem;color:var(--steel);margin-bottom:3px;}
+.info-box .val{font-size:.92rem;font-weight:600;color:var(--ink);}
+
+.person-detail-table{width:100%;border-collapse:collapse;margin-top:8px;}
+.person-detail-table th,.person-detail-table td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:.85rem;}
+.person-detail-table th{background:var(--paper);color:var(--steel);font-weight:600;}
+
+/* Reports View */
+.report-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;}
+.report-table{width:100%;border-collapse:collapse;margin-top:14px;}
+.report-table th,.report-table td{padding:10px;border:1px solid var(--line);font-size:.82rem;text-align:left;}
+.report-table th{background:var(--paper-2);color:var(--blueprint-2);font-family:'Kanit',sans-serif;}
+.report-table tr:nth-child(even){background:var(--paper);}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--steel);}
+.empty-state svg{width:46px;height:46px;color:var(--line);margin-bottom:12px;}
+.empty-state h3{font-family:'Kanit',sans-serif;color:var(--blueprint-2);margin:0 0 6px;font-size:1.05rem;}
+.empty-state p{font-size:.85rem;margin:0;}
+
+/* overlay + panel */
+.overlay{
+  position:fixed;inset:0;background:rgba(16,26,34,.5);z-index:1000;
+  display:flex;justify-content:flex-end;opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.overlay.show{opacity:1;pointer-events:auto;}
+.panel{
+  width:100%;max-width:520px;background:var(--paper);height:100%;overflow-y:auto;
+  transform:translateX(20px);transition:transform .25s ease;box-shadow:-8px 0 30px rgba(0,0,0,.15);
+}
+.overlay.show .panel{transform:translateX(0);}
+.panel-head{
+  background:var(--blueprint);color:#fff;padding:18px 20px;position:sticky;top:0;z-index:2;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.panel-head h2{margin:0;font-size:1.05rem;}
+.panel-head .close{background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;line-height:1;opacity:.85;}
+.panel-body{padding:18px 20px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--blueprint-2);margin-bottom:5px;}
+.field .req{color:var(--red);}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:7px;
+  font-family:'Sarabun',sans-serif;font-size:.9rem;background:#fff;color:var(--ink);
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--blueprint-light);outline-offset:1px;border-color:var(--blueprint-light);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:520px){.field-row-3{grid-template-columns:1fr;}}
+
+.section-label{
+  font-size:.72rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--steel);
+  margin:22px 0 10px;padding-top:14px;border-top:1px solid var(--line);
+}
+.section-label:first-child{margin-top:0;padding-top:0;border-top:none;}
+
+.person-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:7px;padding:8px;margin-bottom:6px;}
+.person-row input,.person-row select{flex:1;min-width:100px;padding:7px 8px;font-size:.82rem;border:1px solid var(--line);border-radius:6px;}
+.person-row .rm{background:none;border:none;color:var(--red);font-size:1.1rem;cursor:pointer;padding:0 4px;flex:0;}
+.add-person-btn{font-size:.8rem;color:var(--blueprint);font-weight:600;background:none;border:none;cursor:pointer;padding:4px 0;}
+
+.range-wrap{display:flex;align-items:center;gap:10px;}
+.range-wrap input[type=range]{flex:1;accent-color:var(--blueprint);}
+.range-val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.9rem;width:44px;text-align:right;}
+
+.panel-foot{
+  position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);
+  padding:14px 20px;display:flex;justify-content:flex-end;gap:8px;
+}
+.btn-ghost{background:#fff;border:1px solid var(--line);color:var(--ink);padding:10px 16px;border-radius:8px;font-weight:600;font-size:.86rem;cursor:pointer;}
+
+/* confirm modal */
+#confirmOverlay{position:fixed;inset:0;background:rgba(16,26,34,.5);z-index:1100;display:none;align-items:center;justify-content:center;padding:20px;}
+#confirmOverlay.show{display:flex;}
+.confirm-box{background:#fff;border-radius:12px;padding:22px;max-width:360px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.25);}
+.confirm-box h3{margin:0 0 12px;font-size:1rem;color:var(--ink);}
+.confirm-box p{margin:0 0 18px;font-size:.85rem;color:var(--steel);line-height:1.5;}
+.confirm-actions{display:flex;flex-direction:column;gap:8px;}
+.confirm-actions button{width:100%;}
+.btn-danger{background:var(--red);color:#fff;border:none;padding:10px 15px;border-radius:7px;font-weight:600;font-size:.85rem;cursor:pointer;}
+
+/* toast */
+.toast-container{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:1200;display:flex;flex-direction:column;gap:8px;align-items:center;width:100%;padding:0 16px;}
+.toast{
+  background:var(--ink);color:#fff;padding:11px 18px;border-radius:8px;font-size:.85rem;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:8px;
+  animation:toastIn .25s ease;max-width:400px;
+}
+.toast.err{background:var(--red);}
+.toast.ok{background:var(--green);}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.hidden{display:none !important;}
+input[type=file]{display:none;}
+
+/* floating action button */
+.fab{
+  position:fixed;right:22px;bottom:22px;z-index:900;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--blueprint);color:#fff;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 18px rgba(27,73,101,.4), 0 2px 6px rgba(0,0,0,.15);
+  transition:transform .15s ease, background .15s ease;
+}
+.fab:hover{background:var(--blueprint-2);transform:scale(1.06);}
+.fab:active{transform:scale(.96);}
+.fab svg{width:24px;height:24px;}
+@media(max-width:680px){
+  .fab{right:16px;bottom:16px;width:52px;height:52px;}
+}
+
+.sync-indicator{font-size:.7rem;opacity:.7;}
+.sync-indicator.connected{color:var(--green);}
+.sync-indicator.offline{color:var(--red);font-weight:700;opacity:1;}
+
+/* login pin-box */
+.pin-gate{
+  position:fixed;inset:0;background:var(--paper);
+  display:none;align-items:center;justify-content:center;
+  z-index:5000;padding:20px;
+}
+.pin-gate.show{display:flex;}
+.pin-box{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:32px 28px;max-width:360px;width:100%;text-align:center;
+  box-shadow:var(--shadow);
+}
+.pin-box h2{font-size:1.15rem;margin:14px 0 6px;color:var(--blueprint-2);font-family:'Kanit',sans-serif;}
+.pin-box p{font-size:.85rem;color:var(--steel);margin:0 0 18px;}
+.pin-box input{
+  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;
+  font-family:'Sarabun',sans-serif;font-size:.95rem;margin-bottom:12px;text-align:center;
+  letter-spacing:2px;
+}
+.pin-box input:focus{outline:2px solid var(--blueprint-light);outline-offset:1px;border-color:var(--blueprint-light);}
+.pin-error{color:var(--red);font-size:.8rem;margin-top:10px;}
+
+/* CSS สำหรับการสั่งพิมพ์ / Export PDF */
+@media print {
+  body {
+    background: #fff !important;
+    padding-bottom: 0 !important;
+    color: #000 !important;
+  }
+  .header-actions, .toolbar, .card-actions, .fab, .toast-container, .nav-tabs, #pinGate, #splash, .no-print {
+    display: none !important;
+  }
+  .project-card, .detail-card, .report-wrap {
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    margin-bottom: 15px !important;
+  }
+  #app {
+    padding: 0 !important;
+    max-width: 100% !important;
+    display: block !important;
+  }
+  #listView, #reportView, #detailView {
+    display: block !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="mark">🛣️ Highway WorkD</div>
+  <div class="sub">ระบบบริหารงานทางหลวง</div>
+  <div class="bar"><span></span></div>
+</div>
+
+<!-- form login -->
+<div id="pinGate" class="pin-gate">
+  <div class="pin-box">
+    <div style="font-size: 2.5rem; margin-bottom: 8px;">🛣️</div>
+    <h2>Highway WorkD</h2>
+    <p>กรอกรหัสผ่านทีมเพื่อเข้าใช้งานระบบ</p>
+    <input type="password" id="pinInput" placeholder="รหัสผ่าน" autocomplete="off">
+    <button class="btn-primary" onclick="checkPin()" style="width:100%;justify-content:center;">เข้าสู่ระบบ</button>
+    <div id="pinError" class="pin-error hidden">รหัสผ่านไม่ถูกต้อง ลองใหม่อีกครั้ง</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div style="font-size: 2.2rem;">🛣️</div>
+      <div>
+        <h1>Highway WorkD <span id="syncStatus" class="sync-indicator">กำลังตรวจสอบ...</span></h1>
+        <div class="yr">ระบบบริหารงานทางหลวงและโครงการก่อสร้าง</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="exportToExcel()">📊 ส่งออก Excel</button>
+      <button class="icon-btn" onclick="exportToPDF()">📄 พิมพ์ / PDF</button>
+      <button class="icon-btn" onclick="exportData()">⭳ สำรอง JSON</button>
+      <button class="icon-btn" onclick="document.getElementById('importFile').click()">⭱ นำเข้า</button>
+      <button class="icon-btn" onclick="lockApp()">🔒 ล็อก</button>
+    </div>
+  </div>
+
+  <!-- แถบสลับหน้า (Navigation Tabs) -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-list" onclick="switchView('list')">📊 รายการโครงการ</button>
+    <button class="nav-tab" id="tab-report" onclick="switchView('report')">📈 สรุปรายงานงบประมาณ</button>
+    <button class="nav-tab hidden" id="tab-detail" onclick="switchView('detail')">📑 รายละเอียดโครงการ</button>
+  </div>
+
+  <!-- VIEW 1: รายการโครงการ & Dashboard -->
+  <div id="listView">
+    <div class="stats" id="statsRow"></div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="ค้นหาชื่อโครงการ, สายทาง ทล., กม., สัญญา, ผู้รับเหมา..." oninput="renderList()">
+      </div>
+      <select id="filterSource" onchange="renderList()">
+        <option value="">ทุกแหล่งงบประมาณ</option>
+      </select>
+      <select id="filterStatus" onchange="renderList()">
+        <option value="">ทุกสถานะ</option>
+        <option value="รอดำเนินการ">รอดำเนินการ</option>
+        <option value="ระหว่างดำเนินการ">ระหว่างดำเนินการ</option>
+        <option value="รอส่งมอบงาน">รอส่งมอบงาน</option>
+        <option value="รอเบิกจ่าย">รอเบิกจ่าย</option>
+        <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+        <option value="บอกเลิกสัญญา">บอกเลิกสัญญา</option>
+      </select>
+      <select id="sortBy" onchange="renderList()">
+        <option value="updated">เรียง: อัปเดตล่าสุด</option>
+        <option value="name">เรียง: ชื่อโครงการ (ก-ฮ)</option>
+        <option value="budget">เรียง: งบประมาณสูงสุด</option>
+        <option value="progress">เรียง: ความคืบหน้า</option>
+      </select>
+    </div>
+
+    <div id="projectList"></div>
+
+    <div class="empty-state hidden" id="emptyState">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>
+      <h3>ยังไม่มีโครงการในระบบ</h3>
+      <p>กดปุ่ม "+" ด้านล่างเพื่อเริ่มบันทึกข้อมูลโครงการทางหลวง</p>
+    </div>
+  </div>
+
+  <!-- VIEW 2: หน้ารายละเอียดโครงการเชิงลึก -->
+  <div id="detailView" class="hidden">
+    <div style="margin-bottom: 12px;">
+      <button class="act-btn" onclick="switchView('list')">← กลับไปหน้ารายการโครงการ</button>
+    </div>
+    <div id="detailContainer"></div>
+  </div>
+
+  <!-- VIEW 3: หน้ารายงานสรุปภาพรวม -->
+  <div id="reportView" class="hidden">
+    <div class="report-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        <h3 style="margin:0;font-size:1.1rem;color:var(--blueprint-2);">สรุปภาพรวมโครงการจำแนกตามแหล่งงบประมาณ</h3>
+        <button class="btn-primary" onclick="exportToExcel()">📊 ส่งออก Excel ของรายงานนี้</button>
+      </div>
+      <div id="reportContainer"></div>
+    </div>
+  </div>
+
+  <input type="file" id="importFile" accept=".json">
+
+  <button class="fab" onclick="openForm()" aria-label="เพิ่มโครงการใหม่" title="เพิ่มโครงการใหม่">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- FORM PANEL (เพิ่ม / แก้ไขโครงการ) -->
+<div class="overlay" id="formOverlay">
+  <div class="panel">
+    <div class="panel-head">
+      <h2 id="formTitle">เพิ่มโครงการทางหลวงใหม่</h2>
+      <button class="close" onclick="closeForm()">✕</button>
+    </div>
+    <div class="panel-body">
+      <input type="hidden" id="editId">
+
+      <div class="section-label">ข้อมูลโครงการ & สัญญา</div>
+      <div class="field-row">
+        <div class="field">
+          <label>เลขที่สัญญา</label>
+          <input type="text" id="projContractNo" placeholder="เช่น ปน 29/2569">
+        </div>
+        <div class="field">
+          <label>ปีงบประมาณ</label>
+          <input type="text" id="projYear" value="2570">
+        </div>
+      </div>
+      <div class="field">
+        <label>ชื่อโครงการ <span class="req">*</span></label>
+        <input type="text" id="projName" placeholder="เช่น กิจกรรมก่อสร้างทางหลวงผ่านย่านชุมชน...">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>แหล่งงบประมาณ <span class="req">*</span></label>
+          <input type="text" id="projSource" placeholder="เช่น งบประมาณแผ่นดิน / งบจังหวัด">
+        </div>
+        <div class="field">
+          <label>สถานะโครงการ</label>
+          <select id="projStatus">
+            <option value="รอดำเนินการ">รอดำเนินการ</option>
+            <option value="ระหว่างดำเนินการ">ระหว่างดำเนินการ</option>
+            <option value="รอส่งมอบงาน">รอส่งมอบงาน</option>
+            <option value="รอเบิกจ่าย">รอเบิกจ่าย</option>
+            <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+            <option value="บอกเลิกสัญญา">บอกเลิกสัญญา</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-label">ข้อมูลสายทางและพื้นที่ปฏิบัติงาน</div>
+      <div class="field-row-3">
+        <div class="field">
+          <label>หมายเลขทางหลวง</label>
+          <input type="text" id="projRouteNo" placeholder="เช่น ทล.4061">
+        </div>
+        <div class="field">
+          <label>ตอนควบคุม</label>
+          <input type="text" id="projSectionName" placeholder="เช่น ตอน ยะรัง - สะกำ">
+        </div>
+        <div class="field">
+          <label>ช่วง กม.</label>
+          <input type="text" id="projKmRange" placeholder="เช่น กม.14+500 - กม.15+075">
+        </div>
+      </div>
+      <div class="field">
+        <label>ผู้รับเหมา / บริษัทผู้รับจ้าง</label>
+        <input type="text" id="projContractor" placeholder="ชื่อ หจก. หรือ บริษัท">
+      </div>
+
+      <div class="section-label">งบประมาณและความคืบหน้า</div>
+      <div class="field-row">
+        <div class="field">
+          <label>วงเงินงบประมาณ (บาท)</label>
+          <input type="number" id="projBudget" placeholder="0" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>เบิกจ่ายแล้ว (บาท)</label>
+          <input type="number" id="projDisbursed" placeholder="0" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="field">
+        <label>ความคืบหน้างานก่อสร้าง</label>
+        <div class="range-wrap">
+          <input type="range" id="projProgress" min="0" max="100" value="0" oninput="document.getElementById('progressVal').textContent=this.value+'%'">
+          <span class="range-val" id="progressVal">0%</span>
+        </div>
+      </div>
+
+      <div class="section-label">👥 คณะกรรมการตรวจรับพัสดุ / ผู้ควบคุมงาน</div>
+      <div id="personList"></div>
+      <button class="add-person-btn" onclick="addPersonRow()">+ เพิ่มรายชื่อ</button>
+
+      <div class="section-label">รายละเอียดเพิ่มเติม</div>
+      <div class="field">
+        <label>สถานที่ตั้ง / ขอบเขตงาน / หมายเหตุ</label>
+        <textarea id="projDetail" rows="3" placeholder="ระบุรายละเอียดงานเพิ่มเติม..."></textarea>
+      </div>
+    </div>
+    <div class="panel-foot">
+      <button class="btn-ghost" onclick="closeForm()">ยกเลิก</button>
+      <button class="btn-primary" onclick="saveProject()">บันทึกโครงการ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirmOverlay">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">ยืนยันการลบ</h3>
+    <p id="confirmMsg">ต้องการลบโครงการนี้ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้</p>
+    <div class="confirm-actions" id="confirmActions">
+      <button class="btn-ghost" onclick="closeConfirm()">ยกเลิก</button>
+      <button class="btn-danger" id="confirmBtn">ลบโครงการ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==========================================================
+// ⚙️ ตั้งค่า Supabase
+// ==========================================================
+const SUPABASE_URL = "https://xsitjazwsaprzcwnksyu.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzaXRqYXp3c2Fwcnpjd25rc3l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NTc1NjMsImV4cCI6MjEwMjUzMzU2M30.XenCi59dbIR1aS0udfCOdu6nxJt6eWzTvoRDsLkZ2A8";
+
+const STORAGE_KEY = 'highway_workd_data';
+const TABLE_NAME = 'construction_projects';
+
+let supabaseClient = null;
+let USE_SUPABASE = false;
+let projects = [];
+let pendingDeleteId = null;
+let currentSelectedProject = null;
+
+// เทมเพลตแถวคณะกรรมการ
+const personTemplate = () => {
+  const r = document.createElement('div');
+  r.className = 'person-row';
+  r.innerHTML = `
+    <input type="text" class="person-name" placeholder="ชื่อ-นามสกุล">
+    <input type="text" class="person-position" placeholder="ตำแหน่ง">
+    <select class="person-role">
+      <option value="">-- เลือกบทบาท --</option>
+      <option value="ประธานคณะกรรมการ">ประธานคณะกรรมการ</option>
+      <option value="กรรมการ">กรรมการ</option>
+      <option value="ผู้ควบคุมงาน">ผู้ควบคุมงาน</option>
+      <option value="ผู้ช่วยผู้ควบคุมงาน">ผู้ช่วยผู้ควบคุมงาน</option>
+    </select>
+    <button class="rm" onclick="this.parentElement.remove()">×</button>`;
+  return r;
+};
+
+// ==========================================================
+//   เริ่มทำงาน / ระบบล็อกอิน
+// ==========================================================
+const TEAM_PIN = '0000';
+const PIN_SESSION_KEY = 'highway_workd_unlocked';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('importFile').addEventListener('change', handleImportFile);
+  await initSupabase();
+  setTimeout(() => {
+    document.getElementById('splash').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('splash').style.display = 'none';
+      if (localStorage.getItem(PIN_SESSION_KEY) === '1') {
+        document.getElementById('app').style.display = 'block';
+        loadData();
+      } else {
+        document.getElementById('pinGate').classList.add('show');
+        document.getElementById('pinInput').focus();
+      }
+    }, 450);
+  }, 900);
+});
+
+function checkPin(){
+  const val = document.getElementById('pinInput').value;
+  if (val === TEAM_PIN) {
+    localStorage.setItem(PIN_SESSION_KEY, '1');
+    document.getElementById('pinGate').classList.remove('show');
+    document.getElementById('app').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('pinError').classList.remove('hidden');
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+
+document.getElementById('pinInput')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPin();
+});
+
+function lockApp(){
+  localStorage.removeItem(PIN_SESSION_KEY);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('pinError').classList.add('hidden');
+  document.getElementById('pinGate').classList.add('show');
+}
+
+// ==========================================================
+//   เชื่อมต่อ Supabase
+// ==========================================================
+async function initSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !window.supabase) {
+    setOfflineStatus();
+    return;
+  }
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const { error } = await supabaseClient
+      .from(TABLE_NAME)
+      .select('id', { count: 'exact', head: true })
+      .abortSignal(controller.signal);
+    clearTimeout(timeoutId);
+    if (!error) {
+      USE_SUPABASE = true;
+      const el = document.getElementById('syncStatus');
+      el.textContent = '☁️ ออนไลน์ (Supabase)';
+      el.className = 'sync-indicator connected';
+    } else {
+      throw error;
+    }
+  } catch (e) {
+    setOfflineStatus();
+  }
+}
+
+function setOfflineStatus() {
+  USE_SUPABASE = false;
+  const el = document.getElementById('syncStatus');
+  el.textContent = '📴 ออฟไลน์ (LocalStorage)';
+  el.className = 'sync-indicator offline';
+}
+
+function showToast(msg, type = '') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 3000);
+}
+
+// ==========================================================
+//   ระบบสลับหน้า (Multi-View Switcher)
+// ==========================================================
+function switchView(viewName) {
+  document.getElementById('listView').classList.add('hidden');
+  document.getElementById('detailView').classList.add('hidden');
+  document.getElementById('reportView').classList.add('hidden');
+
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+  if (viewName === 'list') {
+    document.getElementById('listView').classList.remove('hidden');
+    document.getElementById('tab-list').classList.add('active');
+    renderList();
+  } else if (viewName === 'detail') {
+    document.getElementById('detailView').classList.remove('hidden');
+    document.getElementById('tab-detail').classList.remove('hidden');
+    document.getElementById('tab-detail').classList.add('active');
+    renderDetailView();
+  } else if (viewName === 'report') {
+    document.getElementById('reportView').classList.remove('hidden');
+    document.getElementById('tab-report').classList.add('active');
+    renderReportView();
+  }
+}
+
+// ==========================================================
+//   เปิด-ปิด ฟอร์ม
+// ==========================================================
+function addPersonRow(){ document.getElementById('personList').appendChild(personTemplate()); }
+
+function openForm(){
+  document.getElementById('formTitle').textContent = 'เพิ่มโครงการทางหลวงใหม่';
+  document.getElementById('editId').value = '';
+  document.getElementById('projContractNo').value = '';
+  document.getElementById('projYear').value = '2570';
+  document.getElementById('projName').value = '';
+  document.getElementById('projSource').value = '';
+  document.getElementById('projStatus').value = 'รอดำเนินการ';
+  document.getElementById('projRouteNo').value = '';
+  document.getElementById('projSectionName').value = '';
+  document.getElementById('projKmRange').value = '';
+  document.getElementById('projContractor').value = '';
+  document.getElementById('projBudget').value = '';
+  document.getElementById('projDisbursed').value = '';
+  document.getElementById('projProgress').value = 0;
+  document.getElementById('progressVal').textContent = '0%';
+  document.getElementById('projDetail').value = '';
+  const list = document.getElementById('personList');
+  list.innerHTML = '';
+  list.appendChild(personTemplate());
+  document.getElementById('formOverlay').classList.add('show');
+}
+function closeForm(){ document.getElementById('formOverlay').classList.remove('show'); }
+
+function saveToStorage(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(projects)); }
+
+// ==========================================================
+//   โหลดข้อมูล (Dual Mode: Supabase + LocalStorage)
+// ==========================================================
+async function loadData() {
+  if (USE_SUPABASE) {
+    try {
+      const { data, error } = await supabaseClient
+        .from(TABLE_NAME)
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        projects = data.map(p => ({
+          id: p.id,
+          contract_no: p.contract_no || '',
+          name: p.name,
+          source: p.source,
+          year: p.year || '2570',
+          route_no: p.route_no || '',
+          section_name: p.section_name || '',
+          km_range: p.km_range || '',
+          status: p.status,
+          contractor: p.contractor,
+          budget: p.budget || 0,
+          disbursed: p.disbursed || 0,
+          progress: p.progress || 0,
+          persons: p.persons || [],
+          detail: p.detail || '',
+          createdAt: p.created_at || p.createdAt,
+          updatedAt: p.updated_at || p.updatedAt
+        }));
+        saveToStorage();
+        updateSourceFilterOptions();
+        renderList();
+        return;
+      }
+    } catch (e) {
+      console.warn('โหลดจาก Supabase ไม่สำเร็จ ดึงจากแคชในเครื่อง:', e);
+    }
+  }
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved){ try{ projects = JSON.parse(saved); }catch(e){ projects = []; } }
+  updateSourceFilterOptions();
+  renderList();
+}
+
+// ==========================================================
+// 💾 บันทึกโครงการ (จัดเก็บทั้ง LocalStorage + Supabase พร้อมกัน)
+// ==========================================================
+async function saveProject(){
+  const editId = document.getElementById('editId').value;
+  const n = document.getElementById('projName').value.trim();
+  const source = document.getElementById('projSource').value.trim();
+  const now = new Date().toISOString();
+
+  if(!n || !source){ showToast('กรอกชื่อโครงการและแหล่งงบประมาณให้ครบถ้วน', 'err'); return; }
+
+  const persons = [];
+  document.querySelectorAll('#personList .person-row').forEach(r=>{
+    const nm = r.querySelector('.person-name').value.trim();
+    const pos = r.querySelector('.person-position').value.trim();
+    const role = r.querySelector('.person-role').value;
+    if(nm) persons.push({name:nm, position:pos||'-', role:role||'ไม่ระบุ'});
+  });
+
+  const projectData = {
+    contract_no: document.getElementById('projContractNo').value.trim(),
+    name: n,
+    source,
+    year: document.getElementById('projYear').value.trim() || '2570',
+    route_no: document.getElementById('projRouteNo').value.trim(),
+    section_name: document.getElementById('projSectionName').value.trim(),
+    km_range: document.getElementById('projKmRange').value.trim(),
+    status: document.getElementById('projStatus').value,
+    contractor: document.getElementById('projContractor').value.trim(),
+    budget: parseFloat(document.getElementById('projBudget').value) || 0,
+    disbursed: parseFloat(document.getElementById('projDisbursed').value) || 0,
+    progress: parseInt(document.getElementById('projProgress').value) || 0,
+    persons,
+    detail: document.getElementById('projDetail').value.trim(),
+    updated_at: now,
+    updatedAt: now
+  };
+
+  let targetId = editId;
+
+  // 1. บันทึกลง LocalStorage ก่อนทันที
+  if (editId) {
+    const idx = projects.findIndex(x => String(x.id) === String(editId));
+    if (idx !== -1) projects[idx] = { ...projects[idx], ...projectData };
+  } else {
+    targetId = Date.now();
+    projectData.id = targetId;
+    projectData.created_at = now;
+    projectData.createdAt = now;
+    projects.unshift(projectData);
+  }
+  saveToStorage();
+  updateSourceFilterOptions();
+  renderList();
+  closeForm();
+
+  // 2. ซิงค์ขึ้น Supabase
+  if (USE_SUPABASE) {
+    try {
+      const payload = {
+        contract_no: projectData.contract_no,
+        name: projectData.name,
+        source: projectData.source,
+        year: projectData.year,
+        route_no: projectData.route_no,
+        section_name: projectData.section_name,
+        km_range: projectData.km_range,
+        status: projectData.status,
+        contractor: projectData.contractor,
+        budget: projectData.budget,
+        disbursed: projectData.disbursed,
+        progress: projectData.progress,
+        persons: projectData.persons,
+        detail: projectData.detail,
+        updated_at: now
+      };
+
+      if (editId) {
+        const { error } = await supabaseClient.from(TABLE_NAME).update(payload).eq('id', editId);
+        if (error) throw error;
+        showToast('อัปเดตข้อมูลบนเครื่องและคลาวด์เรียบร้อย ✅', 'ok');
+      } else {
+        payload.created_at = now;
+        const { data, error } = await supabaseClient.from(TABLE_NAME).insert([payload]).select();
+        if (error) throw error;
+        if (data && data[0]) {
+          const idx = projects.findIndex(x => x.id === targetId);
+          if (idx !== -1) projects[idx].id = data[0].id;
+          saveToStorage();
+        }
+        showToast('บันทึกโครงการบนเครื่องและคลาวด์เรียบร้อย ✅', 'ok');
+      }
+    } catch (err) {
+      console.warn('บันทึกขึ้น Supabase ไม่สำเร็จ:', err);
+      showToast('บันทึกลงเครื่องแล้ว (คลาวด์ยังไม่ได้ซิงค์) ⚠️', 'ok');
+    }
+  } else {
+    showToast('บันทึกข้อมูลลงเครื่องเรียบร้อย (โหมดออฟไลน์) ✅', 'ok');
+  }
+}
+
+function escapeHtml(str){
+  if(!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ==========================================================
+// ✏️ แก้ไขโครงการ
+// ==========================================================
+function editProject(id){
+  const p = projects.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  document.getElementById('formTitle').textContent = 'แก้ไขโครงการทางหลวง';
+  document.getElementById('editId').value = id;
+  document.getElementById('projContractNo').value = p.contract_no || '';
+  document.getElementById('projYear').value = p.year || '2570';
+  document.getElementById('projName').value = p.name || '';
+  document.getElementById('projSource').value = p.source || '';
+  document.getElementById('projStatus').value = p.status || 'รอดำเนินการ';
+  document.getElementById('projRouteNo').value = p.route_no || '';
+  document.getElementById('projSectionName').value = p.section_name || '';
+  document.getElementById('projKmRange').value = p.km_range || '';
+  document.getElementById('projContractor').value = p.contractor || '';
+  document.getElementById('projBudget').value = p.budget || '';
+  document.getElementById('projDisbursed').value = p.disbursed || '';
+  document.getElementById('projProgress').value = p.progress || 0;
+  document.getElementById('progressVal').textContent = (p.progress||0)+'%';
+  document.getElementById('projDetail').value = p.detail || '';
+  const list = document.getElementById('personList');
+  list.innerHTML = '';
+  if(p.persons && p.persons.length){
+    p.persons.forEach(pr=>{
+      const row = personTemplate();
+      row.querySelector('.person-name').value = pr.name;
+      row.querySelector('.person-position').value = pr.position;
+      row.querySelector('.person-role').value = pr.role;
+      list.appendChild(row);
+    });
+  } else { list.appendChild(personTemplate()); }
+  document.getElementById('formOverlay').classList.add('show');
+}
+
+// ==========================================================
+// 🗑 ลบโครงการ
+// ==========================================================
+function askDelete(id){
+  pendingDeleteId = id;
+  document.getElementById('confirmTitle').textContent = 'ยืนยันการลบโครงการ';
+  document.getElementById('confirmMsg').textContent = 'ต้องการลบโครงการนี้ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้';
+  document.getElementById('confirmActions').innerHTML = `
+    <button class="btn-ghost" onclick="closeConfirm()">ยกเลิก</button>
+    <button class="btn-danger" onclick="confirmDelete()">ลบโครงการ</button>
+  `;
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+
+async function confirmDelete(){
+  try {
+    projects = projects.filter(x=>String(x.id)!==String(pendingDeleteId));
+    saveToStorage();
+    renderList();
+
+    if (USE_SUPABASE) {
+      await supabaseClient.from(TABLE_NAME).delete().eq('id', pendingDeleteId);
+    }
+    showToast('ลบโครงการเรียบร้อย ✅', 'ok');
+    if(currentSelectedProject && String(currentSelectedProject.id) === String(pendingDeleteId)){
+      switchView('list');
+    }
+  } catch (err) {
+    showToast('ผิดพลาด: ' + err.message, 'err');
+  }
+  closeConfirm();
+}
+
+function closeConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  pendingDeleteId = null;
+}
+
+function statusMeta(s){
+  const map = {
+    'รอดำเนินการ': {cls:'badge-pending', icon:'⏳', c:'var(--grey)'},
+    'ระหว่างดำเนินการ': {cls:'badge-progress', icon:'🚧', c:'var(--blueprint)'},
+    'รอส่งมอบงาน': {cls:'badge-handover', icon:'📦', c:'var(--purple)'},
+    'รอเบิกจ่าย': {cls:'badge-disbursement', icon:'💰', c:'var(--amber)'},
+    'เสร็จสิ้น': {cls:'badge-done', icon:'✅', c:'var(--green)'},
+    'บอกเลิกสัญญา': {cls:'badge-cancelled', icon:'✕', c:'var(--red)'}
+  };
+  return map[s] || map['รอดำเนินการ'];
+}
+function fmtMoney(n){ return (n||0).toLocaleString('th-TH', {maximumFractionDigits:0}); }
+
+// ==========================================================
+//   อัปเดตตัวกรองแหล่งงบประมาณ
+// ==========================================================
+function updateSourceFilterOptions(){
+  const select = document.getElementById('filterSource');
+  const currentVal = select.value;
+  const sources = [...new Set(projects.map(p=>p.source).filter(Boolean))];
+  select.innerHTML = '<option value="">ทุกแหล่งงบประมาณ</option>' + 
+    sources.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  select.value = currentVal;
+}
+
+// ==========================================================
+//   แสดงแถบสถิติ Dashboard
+// ==========================================================
+function renderStats(){
+  const total = projects.length;
+  const inProgress = projects.filter(p=>p.status==='ระหว่างดำเนินการ').length;
+  const done = projects.filter(p=>p.status==='เสร็จสิ้น').length;
+  const totalBudget = projects.reduce((s,p)=>s+(p.budget||0),0);
+  const stats = [
+    {n: total, l:'โครงการทั้งหมด', c:'var(--blueprint)'},
+    {n: inProgress, l:'ระหว่างดำเนินการ', c:'var(--blueprint-light)'},
+    {n: done, l:'เสร็จสิ้นแล้ว', c:'var(--green)'},
+    {n: '฿'+fmtMoney(totalBudget), l:'งบประมาณรวม (บาท)', c:'var(--amber)'}
+  ];
+  document.getElementById('statsRow').innerHTML = stats.map(s=>`
+    <div class="stat-card" style="--stat-c:${s.c}">
+      <div class="num">${s.n}</div>
+      <div class="lbl">${s.l}</div>
+    </div>`).join('');
+}
+
+// ==========================================================
+//   แสดงรายการโครงการ (View 1)
+// ==========================================================
+function renderList(){
+  renderStats();
+  const q = (document.getElementById('searchInput').value||'').trim().toLowerCase();
+  const filterSource = document.getElementById('filterSource').value;
+  const filterStatus = document.getElementById('filterStatus').value;
+  const sortBy = document.getElementById('sortBy').value;
+
+  let list = projects.filter(p=>{
+    const matchQ = !q || [p.name, p.source, p.contractor, p.contract_no, p.route_no, p.section_name, p.km_range]
+      .some(v=>(v||'').toLowerCase().includes(q));
+    const matchSource = !filterSource || p.source===filterSource;
+    const matchStatus = !filterStatus || p.status===filterStatus;
+    return matchQ && matchSource && matchStatus;
+  });
+
+  if(sortBy==='name') list.sort((a,b)=>a.name.localeCompare(b.name,'th'));
+  else if(sortBy==='updated') list.sort((a,b)=>new Date(b.updatedAt||b.updated_at||b.createdAt||0)-new Date(a.updatedAt||a.updated_at||a.createdAt||0));
+  else if(sortBy==='budget') list.sort((a,b)=>(b.budget||0)-(a.budget||0));
+  else if(sortBy==='progress') list.sort((a,b)=>(b.progress||0)-(a.progress||0));
+
+  const container = document.getElementById('projectList');
+  const empty = document.getElementById('emptyState');
+
+  if(projects.length===0){ container.innerHTML=''; empty.classList.remove('hidden'); return; }
+  if(list.length===0){
+    empty.classList.remove('hidden');
+    document.querySelector('#emptyState h3').textContent = 'ไม่พบโครงการที่ตรงกับเงื่อนไข';
+    document.querySelector('#emptyState p').textContent = 'ลองปรับคำค้นหาหรือตัวกรองแหล่งงบประมาณ';
+    container.innerHTML = '';
+    return;
+  }
+  empty.classList.add('hidden');
+
+  container.innerHTML = list.map((p,i)=>{
+    const sm = statusMeta(p.status);
+    const disbPct = p.budget ? Math.min(100, Math.round((p.disbursed||0)/p.budget*100)) : 0;
+
+    return `
+    <div class="project-card">
+      <div class="card-top">
+        <div>
+          <div class="card-idx">โครงการที่ ${String(i+1).padStart(2,'0')} · ปีงบ ${escapeHtml(p.year||'2570')}${p.contract_no ? ' · เลขที่สัญญา: '+escapeHtml(p.contract_no) : ''}</div>
+          <div class="card-title">${escapeHtml(p.name)}</div>
+          <div class="card-sub">แหล่งงบ: <strong>${escapeHtml(p.source)}</strong>${p.contractor?' · ผู้รับเหมา: '+escapeHtml(p.contractor):''}</div>
+        </div>
+        <span class="badge ${sm.cls}">${sm.icon} ${escapeHtml(p.status)}</span>
+      </div>
+
+      ${(p.route_no || p.section_name || p.km_range) ? `
+      <div class="highway-tag-row">
+        ${p.route_no ? `<span class="hw-tag">🛣️ ${escapeHtml(p.route_no)}</span>` : ''}
+        ${p.section_name ? `<span class="hw-tag">📍 ${escapeHtml(p.section_name)}</span>` : ''}
+        ${p.km_range ? `<span class="hw-tag">📏 ${escapeHtml(p.km_range)}</span>` : ''}
+      </div>` : ''}
+
+      <div class="meta-grid">
+        <div class="meta-item"><div class="k">วงเงินงบประมาณ</div><div class="v">฿${fmtMoney(p.budget)}</div></div>
+        <div class="meta-item"><div class="k">เบิกจ่ายแล้ว</div><div class="v">฿${fmtMoney(p.disbursed)} <span style="color:var(--steel);font-weight:400">(${disbPct}%)</span></div></div>
+        <div class="meta-item"><div class="k">คณะกรรมการ</div><div class="v">${(p.persons||[]).length} ท่าน</div></div>
+      </div>
+
+      <div class="progress-row">
+        <div class="pl"><span>ความคืบหน้างานก่อสร้าง</span><span>${p.progress||0}%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:${p.progress||0}%"></div></div>
+      </div>
+
+      <div class="card-actions">
+        <button class="act-btn primary" onclick="viewProjectDetail('${p.id}')">📑 ดูรายละเอียดโครงการ</button>
+        <div class="card-actions-right">
+          <button class="act-btn" onclick="editProject('${p.id}')">✏️ แก้ไข</button>
+          <button class="act-btn del" onclick="askDelete('${p.id}')">🗑 ลบ</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ==========================================================
+// 📑 หน้ารายละเอียดโครงการเชิงลึก (View 2)
+// ==========================================================
+function viewProjectDetail(id){
+  const p = projects.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  currentSelectedProject = p;
+  switchView('detail');
+}
+
+function renderDetailView(){
+  if(!currentSelectedProject) return;
+  const p = currentSelectedProject;
+  const sm = statusMeta(p.status);
+  const disbPct = p.budget ? Math.min(100, Math.round((p.disbursed||0)/p.budget*100)) : 0;
+
+  const personsRows = (p.persons && p.persons.length)
+    ? p.persons.map((pr, idx)=>`
+      <tr>
+        <td>${idx+1}</td>
+        <td><strong>${escapeHtml(pr.name)}</strong></td>
+        <td>${escapeHtml(pr.position)}</td>
+        <td><span class="badge badge-progress">${escapeHtml(pr.role)}</span></td>
+      </tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:var(--steel);">ยังไม่มีรายชื่อคณะกรรมการ</td></tr>';
+
+  document.getElementById('detailContainer').innerHTML = `
+    <div class="detail-card">
+      <div class="detail-header">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+          <div>
+            <div class="card-idx">ปีงบประมาณ ${escapeHtml(p.year||'2570')} ${p.contract_no ? ' · เลขที่สัญญา: '+escapeHtml(p.contract_no) : ''}</div>
+            <h2>${escapeHtml(p.name)}</h2>
+          </div>
+          <span class="badge ${sm.cls}" style="font-size:.85rem;padding:6px 14px;">${sm.icon} ${escapeHtml(p.status)}</span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>ข้อมูลสายทางและตำแหน่งงาน</h4>
+        <div class="detail-info-grid">
+          <div class="info-box"><div class="lbl">หมายเลขทางหลวง</div><div class="val">${escapeHtml(p.route_no||'-')}</div></div>
+          <div class="info-box"><div class="lbl">ตอนควบคุม</div><div class="val">${escapeHtml(p.section_name||'-')}</div></div>
+          <div class="info-box"><div class="lbl">ช่วง กม.</div><div class="val">${escapeHtml(p.km_range||'-')}</div></div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>งบประมาณและการเบิกจ่าย</h4>
+        <div class="detail-info-grid">
+          <div class="info-box"><div class="lbl">แหล่งงบประมาณ</div><div class="val">${escapeHtml(p.source)}</div></div>
+          <div class="info-box"><div class="lbl">วงเงินงบประมาณ</div><div class="val">฿${fmtMoney(p.budget)}</div></div>
+          <div class="info-box"><div class="lbl">เบิกจ่ายแล้ว (${disbPct}%)</div><div class="val">฿${fmtMoney(p.disbursed)}</div></div>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="pl" style="display:flex;justify-content:space-between;font-size:.82rem;color:var(--steel);margin-bottom:6px;">
+            <span>ความคืบหน้าโครงการ</span><strong>${p.progress||0}%</strong>
+          </div>
+          <div class="progress-track" style="height:10px;"><div class="progress-fill" style="width:${p.progress||0}%"></div></div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>คู่สัญญาและผู้รับจ้าง</h4>
+        <div class="info-box"><div class="lbl">ชื่อผู้รับเหมา / บริษัท</div><div class="val">${escapeHtml(p.contractor||'-')}</div></div>
+      </div>
+
+      <div class="detail-section">
+        <h4>👥 คณะกรรมการตรวจรับพัสดุและผู้ควบคุมงาน</h4>
+        <table class="person-detail-table">
+          <thead>
+            <tr><th>ลำดับ</th><th>ชื่อ-นามสกุล</th><th>ตำแหน่ง</th><th>บทบาทหน้าที่</th></tr>
+          </thead>
+          <tbody>${personsRows}</tbody>
+        </table>
+      </div>
+
+      ${p.detail ? `
+      <div class="detail-section">
+        <h4>รายละเอียดและขอบเขตงานเพิ่มเติม</h4>
+        <div class="info-box" style="white-space:pre-wrap;line-height:1.6;">${escapeHtml(p.detail)}</div>
+      </div>` : ''}
+
+      <div class="card-actions no-print" style="margin-top:20px;">
+        <button class="act-btn" onclick="switchView('list')">← กลับ</button>
+        <div>
+          <button class="act-btn primary" onclick="editProject('${p.id}')">✏️ แก้ไขโครงการนี้</button>
+          <button class="act-btn" onclick="window.print()">📄 พิมพ์หน้านี้</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ==========================================================
+// 📈 หน้ารายงานและสรุปงบประมาณ (View 3)
+// ==========================================================
+function renderReportView(){
+  if(projects.length===0){
+    document.getElementById('reportContainer').innerHTML = '<p style="text-align:center;color:var(--steel);">ยังไม่มีข้อมูลโครงการสำหรับทำรายงาน</p>';
+    return;
+  }
+
+  // จัดกลุ่มตามแหล่งงบประมาณ
+  const grouped = {};
+  projects.forEach(p=>{
+    const src = p.source || 'ไม่ระบุแหล่งงบ';
+    if(!grouped[src]) grouped[src] = { count: 0, totalBudget: 0, totalDisbursed: 0, items: [] };
+    grouped[src].count++;
+    grouped[src].totalBudget += (p.budget||0);
+    grouped[src].totalDisbursed += (p.disbursed||0);
+    grouped[src].items.push(p);
+  });
+
+  let html = `
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>แหล่งงบประมาณ</th>
+          <th style="text-align:center;">จำนวนโครงการ</th>
+          <th style="text-align:right;">วงเงินงบประมาณ (บาท)</th>
+          <th style="text-align:right;">เบิกจ่ายแล้ว (บาท)</th>
+          <th style="text-align:center;">ร้อยละการเบิกจ่าย</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  let sumBudget = 0, sumDisbursed = 0, sumCount = 0;
+
+  for(const [src, data] of Object.entries(grouped)){
+    sumCount += data.count;
+    sumBudget += data.totalBudget;
+    sumDisbursed += data.totalDisbursed;
+    const pct = data.totalBudget ? ((data.totalDisbursed/data.totalBudget)*100).toFixed(1) : '0.0';
+    html += `
+      <tr>
+        <td><strong>${escapeHtml(src)}</strong></td>
+        <td style="text-align:center;">${data.count}</td>
+        <td style="text-align:right;">฿${fmtMoney(data.totalBudget)}</td>
+        <td style="text-align:right;">฿${fmtMoney(data.totalDisbursed)}</td>
+        <td style="text-align:center;">${pct}%</td>
+      </tr>
+    `;
+  }
+
+  const totalPct = sumBudget ? ((sumDisbursed/sumBudget)*100).toFixed(1) : '0.0';
+  html += `
+      <tr style="font-weight:bold;background:var(--paper-2);">
+        <td>รวมทั้งหมด</td>
+        <td style="text-align:center;">${sumCount}</td>
+        <td style="text-align:right;">฿${fmtMoney(sumBudget)}</td>
+        <td style="text-align:right;">฿${fmtMoney(sumDisbursed)}</td>
+        <td style="text-align:center;">${totalPct}%</td>
+      </tr>
+    </tbody>
+  </table>`;
+
+  document.getElementById('reportContainer').innerHTML = html;
+}
+
+// ==========================================================
+// 📊 ส่งออก Excel (.xlsx) ครบทุกฟิลด์ทางหลวง
+// ==========================================================
+function exportToExcel(){
+  if(projects.length === 0){
+    showToast('ไม่มีข้อมูลสำหรับส่งออก Excel', 'err');
+    return;
+  }
+
+  const rows = projects.map((p, i) => {
+    const committeeStr = (p.persons || []).map(pr => `${pr.role}: ${pr.name} (${pr.position})`).join(' | ');
+    return {
+      'ลำดับ': i + 1,
+      'ปีงบประมาณ': p.year || '2570',
+      'เลขที่สัญญา': p.contract_no || '',
+      'ชื่อโครงการ': p.name || '',
+      'แหล่งงบประมาณ': p.source || '',
+      'หมายเลขทางหลวง': p.route_no || '',
+      'ตอนควบคุม': p.section_name || '',
+      'ช่วง กม.': p.km_range || '',
+      'สถานะโครงการ': p.status || '',
+      'ผู้รับเหมา': p.contractor || '',
+      'วงเงินงบประมาณ (บาท)': p.budget || 0,
+      'เบิกจ่ายแล้ว (บาท)': p.disbursed || 0,
+      'ความคืบหน้า (%)': p.progress || 0,
+      'คณะกรรมการตรวจรับพัสดุ': committeeStr,
+      'รายละเอียด / หมายเหตุ': p.detail || '',
+      'สร้างเมื่อ': p.createdAt || p.created_at || '',
+      'อัปเดตล่าสุด': p.updatedAt || p.updated_at || ''
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  ws['!cols'] = [
+    {wch: 8},  // ลำดับ
+    {wch: 12}, // ปีงบ
+    {wch: 16}, // สัญญา
+    {wch: 40}, // ชื่อโครงการ
+    {wch: 22}, // แหล่งงบ
+    {wch: 14}, // ทล.
+    {wch: 22}, // ตอน
+    {wch: 18}, // กม.
+    {wch: 16}, // สถานะ
+    {wch: 25}, // ผู้รับเหมา
+    {wch: 18}, // งบประมาณ
+    {wch: 18}, // เบิกจ่าย
+    {wch: 14}, // % คืบหน้า
+    {wch: 40}, // กรรมการ
+    {wch: 30}, // รายละเอียด
+    {wch: 20}, // สร้างเมื่อ
+    {wch: 20}  // อัปเดตล่าสุด
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Highway_WorkD");
+
+  const fileName = `รายงานงานทางหลวง_HighwayWorkD_${new Date().toLocaleDateString('th-TH').replace(/\//g,'-')}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast('ส่งออก Excel เรียบร้อย ✅', 'ok');
+}
+
+// ==========================================================
+// 📄 ส่งออก PDF / พิมพ์
+// ==========================================================
+function exportToPDF(){
+  if(projects.length === 0){
+    showToast('ไม่มีข้อมูลสำหรับพิมพ์', 'err');
+    return;
+  }
+  window.print();
+}
+
+// ==========================================================
+//   ส่งออก / นำเข้า ข้อมูลสำรอง JSON
+// ==========================================================
+function exportData(){
+  if(projects.length===0){ showToast('ไม่มีข้อมูลให้บันทึก','err'); return; }
+  const dataStr = JSON.stringify(projects, null, 2);
+  const blob = new Blob([dataStr], {type:'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `HighwayWorkD_Backup_${new Date().toLocaleDateString('th-TH').replace(/\//g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('สำรองข้อมูล JSON เรียบร้อย ✅', 'ok');
+}
+
+async function handleImportFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if(!Array.isArray(imported)){
+        showToast('รูปแบบไฟล์ไม่ถูกต้อง', 'err');
+        return;
+      }
+
+      const toInsert = imported.map(p => ({
+        contract_no: p.contract_no || '',
+        name: p.name,
+        source: p.source,
+        year: p.year || '2570',
+        route_no: p.route_no || '',
+        section_name: p.section_name || '',
+        km_range: p.km_range || '',
+        status: p.status || 'รอดำเนินการ',
+        contractor: p.contractor || '',
+        budget: p.budget || 0,
+        disbursed: p.disbursed || 0,
+        progress: p.progress || 0,
+        persons: p.persons || [],
+        detail: p.detail || '',
+        created_at: p.createdAt || p.created_at || new Date().toISOString(),
+        updated_at: p.updatedAt || p.updated_at || new Date().toISOString()
+      }));
+
+      if (USE_SUPABASE) {
+        const { error } = await supabaseClient.from(TABLE_NAME).insert(toInsert);
+        if (error) throw error;
+        await loadData();
+      } else {
+        projects = [...toInsert, ...projects];
+        saveToStorage();
+        updateSourceFilterOptions();
+        renderList();
+      }
+      showToast(`นำเข้าข้อมูลจำนวน ${toInsert.length} รายการเรียบร้อย ✅`, 'ok');
+    } catch (err) {
+      showToast('นำเข้าข้อมูลล้มเหลว: ' + err.message, 'err');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = '';
+}
+
+// ลงทะเบียน Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      await navigator.serviceWorker.register('./sw.js');
+    } catch (err) {}
+  });
+}
+</script>
+</body>
+</html>
