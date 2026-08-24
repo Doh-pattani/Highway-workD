@@ -711,7 +711,7 @@ function showToast(msg, type = '') {
 // ==========================================================
 //   ระบบสลับหน้า (Multi-View Switcher)
 // ==========================================================
-function switchView(viewName) {
+function switchView(viewName, pushHistory = true) {
   document.getElementById('listView').classList.add('hidden');
   document.getElementById('detailView').classList.add('hidden');
   document.getElementById('reportView').classList.add('hidden');
@@ -721,7 +721,6 @@ function switchView(viewName) {
   if (viewName === 'list') {
     document.getElementById('listView').classList.remove('hidden');
     document.getElementById('tab-list').classList.add('active');
-    // ซ่อนแท็บรายละเอียดเมื่อกลับมาหน้าหลัก
     document.getElementById('tab-detail').classList.add('hidden');
     currentSelectedProject = null;
     renderList();
@@ -733,12 +732,22 @@ function switchView(viewName) {
   } else if (viewName === 'report') {
     document.getElementById('reportView').classList.remove('hidden');
     document.getElementById('tab-report').classList.add('active');
-    // ซ่อนแท็บรายละเอียดเมื่อเปิดหน้ารายงาน
     document.getElementById('tab-detail').classList.add('hidden');
     currentSelectedProject = null;
     renderReportView();
   }
+
+  // ✅ บันทึกลง browser history เฉพาะตอนเข้าหน้าย่อย (detail/report)
+  // เพื่อให้ปุ่มย้อนกลับของระบบมีที่ไป ไม่ค้าง
+  if (pushHistory && viewName !== 'list') {
+    history.pushState({ view: viewName }, '', '');
+  }
 }
+
+// ✅ ดักปุ่ม/ท่าทางย้อนกลับของระบบ ให้กลับมาหน้ารายการเสมอ
+window.addEventListener('popstate', () => {
+  switchView('list', false);
+});
 
 // ==========================================================
 //   เปิด-ปิด ฟอร์ม
