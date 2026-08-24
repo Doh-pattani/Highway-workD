@@ -749,46 +749,83 @@ function showToast(msg, type = '') {
 }
 
 // ==========================================================
-//   ระบบสลับหน้า (Multi-View Switcher)
+//   ระบบจัดการแท็บและประวัติหน้าเว็บ (Navigation & History)
 // ==========================================================
-// ฟังก์ชันปิดแท็บรายละเอียดโครงการ
+
+// ฟังก์ชันสำหรับปุ่มปิดสีแดง (✕) บนแท็บรายละเอียด
 function closeDetailTab() {
   const tabDetail = document.getElementById('tab-detail');
-  if (tabDetail) tabDetail.style.display = 'none';
+  if (tabDetail) {
+    tabDetail.style.display = 'none';
+    tabDetail.classList.add('hidden');
+  }
   currentSelectedProject = null;
+  // สลับกลับหน้าหลัก
   switchView('list');
 }
 
-// ระบบสลับหน้า
-function switchView(viewName) {
+// ระบบสลับหน้าพร้อมระบบจำประวัติ Browser Back
+function switchView(viewName, pushHistory = true) {
   const listView = document.getElementById('listView');
   const detailView = document.getElementById('detailView');
   const reportView = document.getElementById('reportView');
   const tabDetail = document.getElementById('tab-detail');
 
+  // ซ่อนทุกหน้าก่อน
   listView.classList.add('hidden');
   detailView.classList.add('hidden');
   reportView.classList.add('hidden');
 
+  // เอาสถานะ active ออกจากทุกแท็บ
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
   if (viewName === 'list') {
     listView.classList.remove('hidden');
     document.getElementById('tab-list').classList.add('active');
+    
+    // ซ่อนแท็บรายละเอียดเมื่ออยู่หน้ารายการ
+    if (tabDetail) {
+      tabDetail.style.display = 'none';
+      tabDetail.classList.add('hidden');
+    }
+    currentSelectedProject = null;
     renderList();
+
   } else if (viewName === 'detail') {
     detailView.classList.remove('hidden');
+    
+    // แสดงแท็บรายละเอียด
     if (tabDetail) {
       tabDetail.style.display = 'inline-flex';
+      tabDetail.classList.remove('hidden');
       tabDetail.classList.add('active');
     }
     renderDetailView();
+
   } else if (viewName === 'report') {
     reportView.classList.remove('hidden');
     document.getElementById('tab-report').classList.add('active');
+    
+    // ซ่อนแท็บรายละเอียดเมื่อเปิดหน้ารายงาน
+    if (tabDetail) {
+      tabDetail.style.display = 'none';
+      tabDetail.classList.add('hidden');
+    }
+    currentSelectedProject = null;
     renderReportView();
   }
+
+  // บันทึกลง Browser History เฉพาะตอนเข้าหน้าย่อย (detail / report)
+  if (pushHistory && viewName !== 'list') {
+    history.pushState({ view: viewName }, '', '');
+  }
 }
+
+// ดักปุ่ม Back / ท่าทางปัดขอบจอย้อนกลับของระบบมือถือ
+window.addEventListener('popstate', () => {
+  // เมื่อกดย้อนกลับ ให้สลับกลับมาหน้ารายการ (และตั้ง pushHistory เป็น false ไม่ให้ลูป)
+  switchView('list', false);
+});
 
 // ==========================================================
 //   เปิด-ปิด ฟอร์ม
