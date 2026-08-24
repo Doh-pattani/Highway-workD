@@ -183,6 +183,31 @@ h1,h2,h3,.display{font-family:'Kanit',sans-serif;}
 .project-card::after{right:8px;border-right:2px solid var(--blueprint-light);}
 .card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px;}
 .card-idx{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--steel);letter-spacing:.5px;}
+/* แถบหัวโครงการ (ลำดับ และ ปีงบ) */
+.card-idx-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--steel);
+  margin-bottom: 4px;
+}
+
+/* เลขที่สัญญาแบบตัวหนาและมีกรอบเน้นชัดเจน */
+.contract-highlight {
+  display: inline-block;
+  font-family: 'Kanit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--blueprint-2);
+  background: var(--paper-2);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border-left: 3px solid var(--blueprint);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
 .card-title{font-family:'Kanit',sans-serif;font-size:1.02rem;font-weight:600;color:var(--ink);margin:3px 0 4px;line-height:1.4;}
 .card-sub{font-size:.8rem;color:var(--steel);}
 .badge{font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
@@ -1167,48 +1192,62 @@ function renderList(){
   }
   empty.classList.add('hidden');
 
-  container.innerHTML = list.map((p,i)=>{
-    const sm = statusMeta(p.status);
-    const disbPct = p.budget ? Math.min(100, Math.round((p.disbursed||0)/p.budget*100)) : 0;
+container.innerHTML = list.map((p,i)=>{
+  const sm = statusMeta(p.status);
+  const disbPct = p.budget ? Math.min(100, Math.round((p.disbursed||0)/p.budget*100)) : 0;
 
-    return `
-    <div class="project-card">
-      <div class="card-top">
-        <div>
-          <div class="card-idx">โครงการที่ ${String(i+1).padStart(2,'0')} · ปีงบ ${escapeHtml(p.year||'2570')}${p.contract_no ? ' · เลขที่สัญญา: '+escapeHtml(p.contract_no) : ''}</div>
-          <div class="card-title">${escapeHtml(p.name)}</div>
-          <div class="card-sub">แหล่งงบ: <strong>${escapeHtml(p.source)}</strong>${p.contractor?' · ผู้รับเหมา: '+escapeHtml(p.contractor):''}</div>
+  return `
+  <div class="project-card">
+    <div class="card-top">
+      <div style="flex: 1;">
+        <!-- 1. ลำดับโครงการ & 2. ปีงบประมาณ -->
+        <div class="card-idx-row">
+          <span>โครงการที่ ${String(i+1).padStart(2,'0')}</span>
+          <span>·</span>
+          <span>ปีงบ ${escapeHtml(p.year || '2568')}</span>
         </div>
-        <span class="badge ${sm.cls}">${sm.icon} ${escapeHtml(p.status)}</span>
-      </div>
 
-      ${(p.route_no || p.section_name || p.km_range) ? `
-      <div class="highway-tag-row">
-        ${p.route_no ? `<span class="hw-tag">🛣️ ${escapeHtml(p.route_no)}</span>` : ''}
-        ${p.section_name ? `<span class="hw-tag">📍 ${escapeHtml(p.section_name)}</span>` : ''}
-        ${p.km_range ? `<span class="hw-tag">📏 ${escapeHtml(p.km_range)}</span>` : ''}
-      </div>` : ''}
+        <!-- 4. เลขที่สัญญา (ตัวหนา เด่นชัด มีกรอบเน้นสายตา) -->
+        ${p.contract_no ? `
+        <div class="contract-highlight">
+          เลขที่สัญญา: ${escapeHtml(p.contract_no)}
+        </div>` : ''}
 
-      <div class="meta-grid">
-        <div class="meta-item"><div class="k">วงเงินงบประมาณ</div><div class="v">฿${fmtMoney(p.budget)}</div></div>
-        <div class="meta-item"><div class="k">เบิกจ่ายแล้ว</div><div class="v">฿${fmtMoney(p.disbursed)} <span style="color:var(--steel);font-weight:400">(${disbPct}%)</span></div></div>
-        <div class="meta-item"><div class="k">คณะกรรมการ</div><div class="v">${(p.persons||[]).length} ท่าน</div></div>
+        <!-- 3. ชื่อโครงการ -->
+        <div class="card-title">${escapeHtml(p.name)}</div>
+        
+        <div class="card-sub">แหล่งงบ: <strong>${escapeHtml(p.source)}</strong>${p.contractor ? ' · ผู้รับเหมา: ' + escapeHtml(p.contractor) : ''}</div>
       </div>
+      <span class="badge ${sm.cls}">${sm.icon} ${escapeHtml(p.status)}</span>
+    </div>
 
-      <div class="progress-row">
-        <div class="pl"><span>ความคืบหน้างานก่อสร้าง</span><span>${p.progress||0}%</span></div>
-        <div class="progress-track"><div class="progress-fill" style="width:${p.progress||0}%"></div></div>
-      </div>
+    ${(p.route_no || p.section_name || p.km_range) ? `
+    <div class="highway-tag-row">
+      ${p.route_no ? `<span class="hw-tag">🛣️ ${escapeHtml(p.route_no)}</span>` : ''}
+      ${p.section_name ? `<span class="hw-tag">📍 ${escapeHtml(p.section_name)}</span>` : ''}
+      ${p.km_range ? `<span class="hw-tag">📏 ${escapeHtml(p.km_range)}</span>` : ''}
+    </div>` : ''}
 
-      <div class="card-actions">
-        <button class="act-btn primary" onclick="viewProjectDetail('${p.id}')">📑 ดูรายละเอียดโครงการ</button>
-        <div class="card-actions-right">
-          <button class="act-btn" onclick="editProject('${p.id}')">✏️ แก้ไข</button>
-          <button class="act-btn del" onclick="askDelete('${p.id}')">🗑 ลบ</button>
-        </div>
+    <div class="meta-grid">
+      <div class="meta-item"><div class="k">วงเงินงบประมาณ</div><div class="v">฿${fmtMoney(p.budget)}</div></div>
+      <div class="meta-item"><div class="k">เบิกจ่ายแล้ว</div><div class="v">฿${fmtMoney(p.disbursed)} <span style="color:var(--steel);font-weight:400">(${disbPct}%)</span></div></div>
+      <div class="meta-item"><div class="k">คณะกรรมการ</div><div class="v">${(p.persons||[]).length} ท่าน</div></div>
+    </div>
+
+    <div class="progress-row">
+      <div class="pl"><span>ความคืบหน้างานก่อสร้าง</span><span>${p.progress||0}%</span></div>
+      <div class="progress-track"><div class="progress-fill" style="width:${p.progress||0}%"></div></div>
+    </div>
+
+    <div class="card-actions">
+      <button class="act-btn primary" onclick="viewProjectDetail('${p.id}')">📑 ดูรายละเอียดโครงการ</button>
+      <div class="card-actions-right">
+        <button class="act-btn" onclick="editProject('${p.id}')">✏️ แก้ไข</button>
+        <button class="act-btn del" onclick="askDelete('${p.id}')">🗑 ลบ</button>
       </div>
-    </div>`;
-  }).join('');
+    </div>
+  </div>`;
+}).join('');
 }
 
 // ==========================================================
