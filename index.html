@@ -98,30 +98,50 @@ h1,h2,h3,.display{font-family:'Kanit',sans-serif;}
   display:flex;gap:6px;background:var(--card);border:1px solid var(--line);
   padding:6px;border-radius:12px;margin-bottom:16px;overflow-x:auto;
 }
-.nav-tab{
-  flex:1;min-width:120px;text-align:center;padding:9px 12px;border-radius:8px;
-  font-size:.85rem;font-weight:600;color:var(--steel);cursor:pointer;
-  border:none;background:none;transition:all .2s;white-space:nowrap;
-  font-family:'Kanit',sans-serif;
+/* จัดโครงสร้างแท็บให้รองรับการดันปุ่มไปชิดขวา */
+.nav-tab {
+  flex: 1;
+  min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--steel);
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all .2s;
+  white-space: nowrap;
+  font-family: 'Kanit', sans-serif;
+  gap: 8px;
 }
-.nav-tab.active{background:var(--blueprint);color:#fff;box-shadow:0 2px 6px rgba(27,73,101,.3);}
+/* ปุ่มปิดวงกลมสีแดง กากบาทสีขาว ชิดขวา */
 .nav-tab-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin-left: 6px;
+  width: 20px;
+  height: 20px;
+  margin-left: auto; /* ดันตัวปุ่มไปชิดขวาสุดของแท็บ */
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
+  background: #B4443B; /* พื้นหลังสีแดง */
+  color: #FFFFFF; /* กากบาทสีขาว */
   font-size: 11px;
-  font-weight: bold;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
 }
 .nav-tab-close:hover {
-  background: rgba(255, 255, 255, 0.45);
+  background: #8E2B23;
+  transform: scale(1.1);
 }
+.nav-tab.active{background:var(--blueprint);color:#fff;box-shadow:0 2px 6px rgba(27,73,101,.3);}
 
 /* stat cards */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
@@ -734,9 +754,7 @@ function showToast(msg, type = '') {
 // ฟังก์ชันปิดแท็บรายละเอียดโครงการ
 function closeDetailTab() {
   const tabDetail = document.getElementById('tab-detail');
-  if (tabDetail) {
-    tabDetail.style.display = 'none';
-  }
+  if (tabDetail) tabDetail.style.display = 'none';
   currentSelectedProject = null;
   switchView('list');
 }
