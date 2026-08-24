@@ -394,12 +394,15 @@ input[type=file]{display:none;}
     </div>
   </div>
 
-  <!-- แถบสลับหน้า (Navigation Tabs) -->
-  <div class="nav-tabs">
-    <button class="nav-tab active" id="tab-list" onclick="('list')">📊 รายการโครงการ</button>
-    <button class="nav-tab" id="tab-report" onclick="('report')">📈 สรุปรายงานงบประมาณ</button>
-    <button class="nav-tab hidden" id="tab-detail" onclick="('detail')">📑 รายละเอียดโครงการ</button>
-  </div>
+<!-- แถบสลับหน้า (Navigation Tabs) -->
+<div class="nav-tabs">
+  <button class="nav-tab active" id="tab-list" onclick="switchView('list')">📊 รายการโครงการ</button>
+  <button class="nav-tab" id="tab-report" onclick="switchView('report')">📈 สรุปรายงานงบประมาณ</button>
+  <button class="nav-tab" id="tab-detail" style="display:none;" onclick="switchView('detail')">
+    📑 รายละเอียด
+    <span onclick="event.stopPropagation(); closeDetailTab();" style="margin-left:6px;padding:2px 6px;border-radius:50%;background:rgba(0,0,0,0.15);font-size:11px;line-height:1;display:inline-block;" title="ปิดแท็บ">✕</span>
+  </button>
+</div>
 
   <!-- VIEW 1: รายการโครงการ & Dashboard -->
   <div id="listView">
@@ -711,6 +714,15 @@ function showToast(msg, type = '') {
 // ==========================================================
 //   ระบบสลับหน้า (Multi-View Switcher)
 // ==========================================================
+// ฟังก์ชันปิดแท็บรายละเอียดโครงการ
+function closeDetailTab() {
+  const tabDetail = document.getElementById('tab-detail');
+  if (tabDetail) tabDetail.style.display = 'none';
+  currentSelectedProject = null;
+  switchView('list');
+}
+
+// ระบบสลับหน้า
 function switchView(viewName) {
   const listView = document.getElementById('listView');
   const detailView = document.getElementById('detailView');
@@ -726,34 +738,17 @@ function switchView(viewName) {
   if (viewName === 'list') {
     listView.classList.remove('hidden');
     document.getElementById('tab-list').classList.add('active');
-    
-    // บังคับซ่อนแท็บรายละเอียดทันที
-    if (tabDetail) {
-      tabDetail.classList.add('hidden');
-      tabDetail.style.display = 'none';
-    }
-    currentSelectedProject = null;
     renderList();
   } else if (viewName === 'detail') {
     detailView.classList.remove('hidden');
-    
-    // แสดงแท็บรายละเอียดเฉพาะตอนเปิดดู
     if (tabDetail) {
-      tabDetail.classList.remove('hidden');
-      tabDetail.style.display = 'inline-block';
+      tabDetail.style.display = 'inline-flex';
       tabDetail.classList.add('active');
     }
     renderDetailView();
   } else if (viewName === 'report') {
     reportView.classList.remove('hidden');
     document.getElementById('tab-report').classList.add('active');
-    
-    // บังคับซ่อนแท็บรายละเอียดเมื่อไปหน้ารายงาน
-    if (tabDetail) {
-      tabDetail.classList.add('hidden');
-      tabDetail.style.display = 'none';
-    }
-    currentSelectedProject = null;
     renderReportView();
   }
 }
