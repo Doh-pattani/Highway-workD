@@ -396,9 +396,9 @@ input[type=file]{display:none;}
 
   <!-- แถบสลับหน้า (Navigation Tabs) -->
   <div class="nav-tabs">
-    <button class="nav-tab active" id="tab-list" onclick="switchView('list')">📊 รายการโครงการ</button>
-    <button class="nav-tab" id="tab-report" onclick="switchView('report')">📈 สรุปรายงานงบประมาณ</button>
-    <button class="nav-tab hidden" id="tab-detail" onclick="switchView('detail')">📑 รายละเอียดโครงการ</button>
+    <button class="nav-tab active" id="tab-list" onclick="('list')">📊 รายการโครงการ</button>
+    <button class="nav-tab" id="tab-report" onclick="('report')">📈 สรุปรายงานงบประมาณ</button>
+    <button class="nav-tab hidden" id="tab-detail" onclick="('detail')">📑 รายละเอียดโครงการ</button>
   </div>
 
   <!-- VIEW 1: รายการโครงการ & Dashboard -->
@@ -711,43 +711,52 @@ function showToast(msg, type = '') {
 // ==========================================================
 //   ระบบสลับหน้า (Multi-View Switcher)
 // ==========================================================
-function switchView(viewName, pushHistory = true) {
-  document.getElementById('listView').classList.add('hidden');
-  document.getElementById('detailView').classList.add('hidden');
-  document.getElementById('reportView').classList.add('hidden');
+function switchView(viewName) {
+  const listView = document.getElementById('listView');
+  const detailView = document.getElementById('detailView');
+  const reportView = document.getElementById('reportView');
+  const tabDetail = document.getElementById('tab-detail');
+
+  listView.classList.add('hidden');
+  detailView.classList.add('hidden');
+  reportView.classList.add('hidden');
 
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
   if (viewName === 'list') {
-    document.getElementById('listView').classList.remove('hidden');
+    listView.classList.remove('hidden');
     document.getElementById('tab-list').classList.add('active');
-    document.getElementById('tab-detail').classList.add('hidden');
+    
+    // บังคับซ่อนแท็บรายละเอียดทันที
+    if (tabDetail) {
+      tabDetail.classList.add('hidden');
+      tabDetail.style.display = 'none';
+    }
     currentSelectedProject = null;
     renderList();
   } else if (viewName === 'detail') {
-    document.getElementById('detailView').classList.remove('hidden');
-    document.getElementById('tab-detail').classList.remove('hidden');
-    document.getElementById('tab-detail').classList.add('active');
+    detailView.classList.remove('hidden');
+    
+    // แสดงแท็บรายละเอียดเฉพาะตอนเปิดดู
+    if (tabDetail) {
+      tabDetail.classList.remove('hidden');
+      tabDetail.style.display = 'inline-block';
+      tabDetail.classList.add('active');
+    }
     renderDetailView();
   } else if (viewName === 'report') {
-    document.getElementById('reportView').classList.remove('hidden');
+    reportView.classList.remove('hidden');
     document.getElementById('tab-report').classList.add('active');
-    document.getElementById('tab-detail').classList.add('hidden');
+    
+    // บังคับซ่อนแท็บรายละเอียดเมื่อไปหน้ารายงาน
+    if (tabDetail) {
+      tabDetail.classList.add('hidden');
+      tabDetail.style.display = 'none';
+    }
     currentSelectedProject = null;
     renderReportView();
   }
-
-  // ✅ บันทึกลง browser history เฉพาะตอนเข้าหน้าย่อย (detail/report)
-  // เพื่อให้ปุ่มย้อนกลับของระบบมีที่ไป ไม่ค้าง
-  if (pushHistory && viewName !== 'list') {
-    history.pushState({ view: viewName }, '', '');
-  }
 }
-
-// ✅ ดักปุ่ม/ท่าทางย้อนกลับของระบบ ให้กลับมาหน้ารายการเสมอ
-window.addEventListener('popstate', () => {
-  switchView('list', false);
-});
 
 // ==========================================================
 //   เปิด-ปิด ฟอร์ม
